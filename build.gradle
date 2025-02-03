@@ -1,0 +1,41 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.1.5'
+    id 'io.spring.dependency-management' version '1.0.15.RELEASE'
+}
+
+group = 'cn.huohuas001'
+version = '1.0.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'org.projectlombok:lombok:1.18.28'
+    implementation 'com.alibaba.fastjson2:fastjson2:2.0.52'
+    annotationProcessor 'org.projectlombok:lombok:1.18.28'
+    implementation "org.slf4j:slf4j-api:2.0.16"
+    implementation "ch.qos.logback:logback-classic:1.5.16"
+    implementation "ch.qos.logback:logback-core:1.5.16"
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+springBoot {
+    mainClass.set('cn.huohuas001.WebSocketApplication')
+}
