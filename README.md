@@ -35,8 +35,7 @@
 
 ## 消息处理流程
 
-```
-mermaid
+```mermaid
 graph TD;
     A[WebSocket连接建立] --> B{身份判断};
     B -->|Server端| C[注册服务器实例];
