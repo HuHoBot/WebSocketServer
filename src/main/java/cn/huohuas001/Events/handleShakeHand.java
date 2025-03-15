@@ -32,6 +32,8 @@ public class handleShakeHand extends BaseEvent{
         JSONObject shakeHandPack = new JSONObject();
 
         if(serverId == null || serverId.equals("")){
+            //拒绝连接
+            serverClient.shutdown(1008, "serverId为空.");
             return false;
         }
 

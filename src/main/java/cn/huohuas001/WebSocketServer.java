@@ -45,18 +45,16 @@ public class WebSocketServer extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         activeConnections.add(session);
-        log.info("[Websocket]  新客户端连接: {}", session.getRemoteAddress());
-        log.info("[Websocket]  当前连接数: {}", activeConnections.size());
+        log.info("[Websocket]  新客户端({})连接,当前连接数:{}", session.getRemoteAddress(), activeConnections.size());
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         activeConnections.remove(session);
-        log.info("[Websocket]  当前连接数: {}", activeConnections.size());
         ServerPackage serverPackage = clientManager.getServerPackageBySession(session);
         if(serverPackage != null){
             clientManager.unRegisterServer(serverPackage.getServerId());
-            log.info("[Websocket]  客户端({})断开连接, ServerId: {}", session.getRemoteAddress(),  serverPackage.getServerId());
+            log.info("[Websocket]  客户端({})断开连接, ServerId: {},当前连接数: {}", session.getRemoteAddress(), serverPackage.getServerId(), activeConnections.size());
         }
     }
 
@@ -105,7 +103,7 @@ public class WebSocketServer extends TextWebSocketHandler {
             ServerMsgPack serverMsgPack;
 
             if (responseFutureList.containsKey(packId)) {
-                log.debug("[Websocket]  收到消息: {}", payload);
+                log.debug("[Websocket]  收到response消息: {}", payload);
                 log.debug("处理事件回调", packId);
                 CompletableFuture<JSONObject> responseFuture = responseFutureList.get(packId);
                 if (responseFuture != null && !responseFuture.isDone()) {
@@ -131,7 +129,9 @@ public class WebSocketServer extends TextWebSocketHandler {
             ServerClient client = clientManager.getServerPackageBySession(session).getServerClient();
             BotClient botClient = clientManager.getBotClient();
             if(botClient == null){
-                client.shutdown(1003,"BotClient连接出现问题，请联系机器人管理员");
+                if (client != null) {
+                    client.shutdown(1003, "BotClient连接出现问题，请联系机器人管理员");
+                }
                 return;
             }
 

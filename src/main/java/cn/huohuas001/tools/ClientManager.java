@@ -3,23 +3,56 @@ package cn.huohuas001.tools;
 import cn.huohuas001.client.BotClient;
 import cn.huohuas001.client.ServerClient;
 import com.alibaba.fastjson2.JSONObject;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.socket.WebSocketSession;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.util.HashMap;
 import java.util.HexFormat;
+import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 
-
+@Slf4j
 public class ClientManager {
     // 注册的服务器
-    private final Map<String, ServerClient> registeredServers = new HashMap<>();
+    private static final Map<String, ServerClient> registeredServers = new HashMap<>();
     // 未注册的服务器
-    private final Map<String, ServerClient> absentRegisteredServers = new HashMap<>();
+    private static final Map<String, ServerClient> absentRegisteredServers = new HashMap<>();
     private BotClient botClient = null;
+    private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private static final long HEARTBEAT_TIMEOUT = 15_000; // 15秒超时
+
+    // 初始化时启动定时任务
+    static {
+        // 每隔5秒检查一次心跳
+        scheduler.scheduleAtFixedRate(
+                ClientManager::checkHeartbeats,
+                0, 5, TimeUnit.SECONDS
+        );
+    }
+
+    // 心跳检测逻辑
+    private static void checkHeartbeats() {
+        // 合并两个 Map 的检测逻辑
+        checkHeartbeatsForMap(registeredServers);
+        checkHeartbeatsForMap(absentRegisteredServers);
+    }
+
+    private static void checkHeartbeatsForMap(Map<String, ServerClient> clientMap) {
+        clientMap.values().removeIf(client -> {
+            if (client.isTimeout(HEARTBEAT_TIMEOUT)) {
+                log.info("[ClientManager]  客户端({})心跳超时，自动断开, ServerId: {}", client.getRemoteAddress(), client.getServerId());
+                client.close(1000, "Timeout.");
+                return true; // 从 Map 中移除
+            }
+            return false;
+        });
+    }
 
     /**
      * 注册服务器
