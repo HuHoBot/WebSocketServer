@@ -1,5 +1,6 @@
 package cn.huohuas001.tools;
 
+import cn.huohuas001.Events.handleShakeHand;
 import cn.huohuas001.client.BotClient;
 import cn.huohuas001.client.ServerClient;
 import com.alibaba.fastjson2.JSONObject;
@@ -11,6 +12,7 @@ import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -23,9 +25,13 @@ public class ClientManager {
     private static final Map<String, ServerClient> registeredServers = new HashMap<>();
     // 未注册的服务器
     private static final Map<String, ServerClient> absentRegisteredServers = new HashMap<>();
+    //等待BotClient连接队列
+    private static final Map<String, ServerClient> waitingBotClientList = new ConcurrentHashMap<>();
+
     private BotClient botClient = null;
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private static final long HEARTBEAT_TIMEOUT = 15_000; // 15秒超时
+    private static ClientManager Instance = null;
 
     // 初始化时启动定时任务
     static {
@@ -34,6 +40,17 @@ public class ClientManager {
                 ClientManager::checkHeartbeats,
                 0, 5, TimeUnit.SECONDS
         );
+    }
+
+    public ClientManager() {
+        Instance = this;
+    }
+
+    public static ClientManager getInstance() {
+        if (Instance == null) {
+            Instance = new ClientManager();
+        }
+        return Instance;
     }
 
     // 心跳检测逻辑
@@ -90,6 +107,26 @@ public class ClientManager {
     public boolean putAbsentServer(String serverId, ServerClient serverClient){
         absentRegisteredServers.put(serverId, serverClient);
         return true;
+    }
+
+    public boolean putWaitingBotClientList(String serverId, ServerClient serverClient) {
+        waitingBotClientList.put(serverId, serverClient);
+        return true;
+    }
+
+    public boolean removeWaitingBotClientList(String serverId) {
+        if (waitingBotClientList.containsKey(serverId)) {
+            waitingBotClientList.remove(serverId);
+            return true;
+        }
+        return false;
+    }
+
+    public void reShakeWaitingServer() {
+        new HashMap<>(waitingBotClientList).forEach((serverId, serverClient) -> {
+            handleShakeHand.botClientAllowConnect(serverClient);
+            removeWaitingBotClientList(serverId);
+        });
     }
 
 

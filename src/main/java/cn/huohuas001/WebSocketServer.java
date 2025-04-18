@@ -28,7 +28,7 @@ public class WebSocketServer extends TextWebSocketHandler {
     // BotClient 连接
 
     private static final Map<String, CompletableFuture<JSONObject>> responseFutureList = new HashMap<>();
-    private final ClientManager clientManager = new ClientManager();
+    private static final ClientManager clientManager = new ClientManager();
     private final Map<Enum<?>,BaseEvent> eventMapping = new HashMap<>();
 
     public WebSocketServer() {

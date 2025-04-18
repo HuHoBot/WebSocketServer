@@ -124,4 +124,8 @@ public class BaseClient {
         }
         return false;
     }
+
+    public boolean isConnecting() {
+        return session.isOpen();
+    }
 }
