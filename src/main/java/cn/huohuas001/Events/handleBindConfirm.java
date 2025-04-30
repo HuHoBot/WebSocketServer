@@ -2,7 +2,6 @@ package cn.huohuas001.Events;
 
 import cn.huohuas001.client.BotClient;
 import cn.huohuas001.tools.ClientManager;
-import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 
@@ -21,11 +20,12 @@ public class handleBindConfirm extends BaseEvent{
             String serverId = serverTempData.getString("serverId");
             String group_openid = serverTempData.getString("groupId");
             String author = serverTempData.getString("author");
+            boolean isMoreGroup = !serverTempData.getBoolean("isMoreGroup");
             if(serverId == null){
                 return;
             }
             try {
-                JSONObject config = ClientManager.getServerConfig(serverId);
+                JSONObject config = ClientManager.getServerConfig(serverId, isMoreGroup);
                 if(client.sendMessage(ServerSendEvent.sendConfig,config,packId)){
                     JSONObject bindServerPack = new JSONObject();
                     bindServerPack.put("group",group_openid);

@@ -160,14 +160,17 @@ public class ClientManager {
         return serverPackage.get();
     }
 
-    public static String generateHashKey(String inputString, int saltLength) throws Exception {
-        // 生成随机盐值
-        SecureRandom secureRandom = new SecureRandom();
-        byte[] saltBytes = new byte[saltLength];
-        secureRandom.nextBytes(saltBytes);
-        String salt = HexFormat.of().formatHex(saltBytes);
+    public static String generateHashKey(String inputString, int saltLength, boolean useSalt) throws Exception {
+        String salt = "";
+        if (useSalt) {
+            // 仅当需要加盐时生成随机盐值
+            SecureRandom secureRandom = new SecureRandom();
+            byte[] saltBytes = new byte[saltLength];
+            secureRandom.nextBytes(saltBytes);
+            salt = HexFormat.of().formatHex(saltBytes);
+        }
 
-        // 拼接输入字符串和盐值
+        // 拼接输入字符串和盐值（当需要时）
         String combined = inputString + salt;
 
         // 计算SHA256哈希
@@ -178,8 +181,13 @@ public class ClientManager {
         return HexFormat.of().formatHex(hashBytes);
     }
 
-    public static JSONObject getServerConfig(String serverId) throws Exception {
-        String HashKey = generateHashKey(serverId,16);
+    @Deprecated
+    public static String generateHashKey(String inputString, int saltLength) throws Exception {
+        return generateHashKey(inputString, saltLength, true);
+    }
+
+    public static JSONObject getServerConfig(String serverId, boolean isMoreGroup) throws Exception {
+        String HashKey = generateHashKey(serverId, 16, isMoreGroup);
         JSONObject config = new JSONObject();
         config.put("serverId",serverId);
         config.put("hashKey",HashKey);
