@@ -2,6 +2,9 @@ package cn.huohuas001.tools;
 
 public class VersionManager {
     public static boolean isVersionAllowed(String clientVersion, String latestVersion) {
+        if (clientVersion == null) {
+            return false;
+        }
         if ("dev".equals(clientVersion)) {
             return true;
         }

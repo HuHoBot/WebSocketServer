@@ -110,7 +110,7 @@ public class handleShakeHand extends BaseEvent{
 
         // 处理开发版提示
         if ("dev".equals(ClientVersion)) {
-            String msg = "您正在使用的是开发版，如有问题请在GitHub仓库中提出Issues";
+            String msg = "您正在使用的是开发版，如有问题请在对应适配器的GitHub仓库中提出Issues";
             shakeHandPack.put("code", 2);
             shakeHandPack.put("msg", msg);
             serverClient.sendMessage(ServerSendEvent.shaked, shakeHandPack);
