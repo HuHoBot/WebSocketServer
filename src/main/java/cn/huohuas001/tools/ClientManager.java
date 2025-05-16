@@ -191,12 +191,6 @@ public class ClientManager {
         JSONObject config = new JSONObject();
         config.put("serverId",serverId);
         config.put("hashKey",HashKey);
-        config.put("serverName","server");
-        config.put("addSimulatedPlayerTip",true);
-        config.put("motdUrl", "play.easecation.net:19132");
-        JSONObject chatFormat = new JSONObject();
-        chatFormat.put("game","<{name}> {msg}");
-        chatFormat.put("group","群:<{nick}> {msg}");
         return config;
     }
 
