@@ -211,6 +211,10 @@ public class ClientManager {
         return "";
     }
 
+    public int queryOnlineClientCount() {
+        return registeredServers.size();
+    }
+
     public void setBotClient(BotClient botClient){
         this.botClient = botClient;
     }

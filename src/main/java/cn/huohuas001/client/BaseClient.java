@@ -55,7 +55,7 @@ public class BaseClient {
             }
             return false;
         } catch (IOException e) {
-            log.error("[Websocket]  发送消息失败", e);
+            log.error("[Websocket]  发送消息失败 {}", e.getMessage());
             return false;
         }
     }

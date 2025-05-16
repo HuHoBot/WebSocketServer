@@ -10,5 +10,6 @@ public enum ServerRecvEvent
     queryWl,
     queryOnline,
     bindConfirm,
+    chat,
     unknown,
 }

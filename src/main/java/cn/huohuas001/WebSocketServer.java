@@ -26,18 +26,22 @@ public class WebSocketServer extends TextWebSocketHandler {
     // 管理活动连接
     private final Set<WebSocketSession> activeConnections = new CopyOnWriteArraySet<>();
     // BotClient 连接
-
     private static final Map<String, CompletableFuture<JSONObject>> responseFutureList = new HashMap<>();
     private static final ClientManager clientManager = new ClientManager();
     private final Map<Enum<?>,BaseEvent> eventMapping = new HashMap<>();
 
+
     public WebSocketServer() {
+        // Server Event
         registerProcess(ServerRecvEvent.heart,new handleHeart(clientManager));
         registerProcess(ServerRecvEvent.success,new handleResponeMsg(clientManager));
         registerProcess(ServerRecvEvent.error,new handleResponeMsg(clientManager));
         registerProcess(ServerRecvEvent.queryWl,new handleResponeWhiteList(clientManager));
         registerProcess(ServerRecvEvent.queryOnline,new handleResponeOnlineList(clientManager));
         registerProcess(ServerRecvEvent.bindConfirm,new handleBindConfirm(clientManager));
+        registerProcess(ServerRecvEvent.chat, new handleChat(clientManager));
+
+        //Bot Event
         registerProcess(BotClientRecvEvent.SEND_MSG_BY_SERVER_ID,new handleBotSendPack2Server(clientManager));
         registerProcess(BotClientRecvEvent.QUERY_CLIENT_LIST,new handleBotQueryClientList(clientManager));
     }
@@ -93,6 +97,7 @@ public class WebSocketServer extends TextWebSocketHandler {
             JSONObject body = data.getJSONObject("body");
 
             String msgType = header.getString("type");
+            //log.info("[Websocket]  收到type消息: {}", msgType );
             String packId = header.getString("id");
 
             Enum<?> eventType = eventMapping.get(msgType);
@@ -104,7 +109,7 @@ public class WebSocketServer extends TextWebSocketHandler {
 
             if (responseFutureList.containsKey(packId)) {
                 log.debug("[Websocket]  收到response消息: {}", payload);
-                log.debug("处理事件回调", packId);
+                log.debug("处理事件回调 {}", packId);
                 CompletableFuture<JSONObject> responseFuture = responseFutureList.get(packId);
                 if (responseFuture != null && !responseFuture.isDone()) {
                     responseFuture.complete(body);

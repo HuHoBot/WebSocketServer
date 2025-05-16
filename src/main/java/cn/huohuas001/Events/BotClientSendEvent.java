@@ -11,6 +11,7 @@ public enum BotClientSendEvent {
     CALLBACK_FUNC("BotClient.callbackFunc"),
     SHOOK_HAND("shaked"),
     HEART("heart"),
+    CHAT("BotClient.chat"),
     GET_CONFIRM_DATA("BotClient.getConfirmData");
 
 
