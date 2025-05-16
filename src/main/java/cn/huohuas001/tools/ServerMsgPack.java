@@ -1,15 +1,13 @@
 package cn.huohuas001.tools;
 
-import cn.huohuas001.Events.ServerRecvEvent;
-import cn.huohuas001.Events.ServerSendEvent;
 import cn.huohuas001.client.ServerClient;
 import com.alibaba.fastjson2.JSONObject;
 
 public class ServerMsgPack {
-    private JSONObject body;
-    private String packId;
-    private Enum<?> type;
-    private ServerClient client;
+    private final JSONObject body;
+    private final String packId;
+    private final Enum<?> type;
+    private final ServerClient client;
 
     public ServerMsgPack(Enum<?> type, JSONObject body, String packId, ServerClient client) {
         this.body = body;

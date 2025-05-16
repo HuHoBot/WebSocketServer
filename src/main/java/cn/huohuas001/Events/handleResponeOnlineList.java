@@ -15,7 +15,7 @@ public class handleResponeOnlineList extends BaseEvent{
         if(client == null){
             return false;
         }
-        if(!packId.equals("")){
+        if (!packId.isEmpty()) {
             JSONObject msg = body.getJSONObject("list");
             BotClient botClient = clientManager.getBotClient();
             botClient.callBack(msg,packId);

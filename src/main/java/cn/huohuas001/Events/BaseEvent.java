@@ -1,10 +1,7 @@
 package cn.huohuas001.Events;
 
-import cn.huohuas001.client.BaseClient;
-import cn.huohuas001.client.BotClient;
 import cn.huohuas001.client.ServerClient;
 import cn.huohuas001.tools.ClientManager;
-import cn.huohuas001.tools.PackId;
 import cn.huohuas001.tools.ServerMsgPack;
 import com.alibaba.fastjson2.JSONObject;
 

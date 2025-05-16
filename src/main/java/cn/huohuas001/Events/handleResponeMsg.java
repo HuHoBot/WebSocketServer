@@ -14,7 +14,7 @@ public class handleResponeMsg extends BaseEvent{
         if(client == null){
             return false;
         }
-        if(!packId.equals("")){
+        if (!packId.isEmpty()) {
             String msg = body.getString("msg");
             BotClient botClient = clientManager.getBotClient();
             botClient.callBack(msg,packId);

@@ -14,7 +14,7 @@ public class handleResponeWhiteList extends BaseEvent{
         if(client == null){
             return false;
         }
-        if(!packId.equals("")){
+        if (!packId.isEmpty()) {
             String msg = body.getString("list");
             BotClient botClient = clientManager.getBotClient();
             botClient.callBack(msg,packId);
