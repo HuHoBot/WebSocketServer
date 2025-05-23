@@ -4,6 +4,7 @@ import cn.huohuas001.client.BotClient;
 import cn.huohuas001.client.ServerClient;
 import cn.huohuas001.config.BotClientConfig;
 import cn.huohuas001.config.LatestClientVersion;
+import cn.huohuas001.tools.BanManager;
 import cn.huohuas001.tools.ClientManager;
 import cn.huohuas001.tools.VersionManager;
 import com.alibaba.fastjson2.JSONObject;
@@ -120,6 +121,16 @@ public class handleShakeHand extends BaseEvent{
 
             botClientConnect(session, serverId, hashKey);
             return true;
+        }
+
+        //检测是否被ban
+        if (BanManager.isBanned(serverId)) {
+            String msg = "服务器被封禁，请联系机器人管理员查看详情.";
+            shakeHandPack.put("code", 8);
+            shakeHandPack.put("msg", msg);
+            serverClient.sendMessage(ServerSendEvent.shaked, shakeHandPack);
+            serverClient.shutdown(1008, msg);
+            return false;
         }
 
         if (serverClient.getHashKey() == null || serverClient.getHashKey().isEmpty()) { //等待注册服务器

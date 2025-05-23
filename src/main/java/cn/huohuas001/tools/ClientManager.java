@@ -104,22 +104,16 @@ public class ClientManager {
         return registeredServers.containsKey(serverId);
     }
 
-    public boolean putAbsentServer(String serverId, ServerClient serverClient){
+    public void putAbsentServer(String serverId, ServerClient serverClient) {
         absentRegisteredServers.put(serverId, serverClient);
-        return true;
     }
 
-    public boolean putWaitingBotClientList(String serverId, ServerClient serverClient) {
+    public void putWaitingBotClientList(String serverId, ServerClient serverClient) {
         waitingBotClientList.put(serverId, serverClient);
-        return true;
     }
 
-    public boolean removeWaitingBotClientList(String serverId) {
-        if (waitingBotClientList.containsKey(serverId)) {
-            waitingBotClientList.remove(serverId);
-            return true;
-        }
-        return false;
+    public void removeWaitingBotClientList(String serverId) {
+        waitingBotClientList.remove(serverId);
     }
 
     public void reShakeWaitingServer() {
@@ -207,6 +201,16 @@ public class ClientManager {
 
     public int queryOnlineClientCount() {
         return registeredServers.size();
+    }
+
+    public boolean shutDownClient(String serverId) {
+        if (registeredServers.containsKey(serverId)) {
+            ServerClient serverClient = registeredServers.get(serverId);
+            serverClient.shutdown(1000, "Server shutdown.");
+            return true;
+        } else {
+            return false;
+        }
     }
 
     public void setBotClient(BotClient botClient){

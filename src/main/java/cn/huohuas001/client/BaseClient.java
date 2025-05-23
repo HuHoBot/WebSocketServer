@@ -1,5 +1,6 @@
 package cn.huohuas001.client;
 
+import cn.huohuas001.tools.ClientManager;
 import cn.huohuas001.tools.PackId;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,7 @@ public class BaseClient {
     String serverId = null;
     String hashKey = null;
     private volatile long lastHeartbeatTime = System.currentTimeMillis();
+    private final Object sendLock = new Object();
 
     public BaseClient(WebSocketSession session) {
         this.session = session;
@@ -47,16 +49,21 @@ public class BaseClient {
      * @param body 消息包
      */
     public boolean baseSendMessage(String type,JSONObject body, String packId) {
-        try {
-            JSONObject pack = getPack(type, body, packId);
-            if(session.isOpen()){
-                session.sendMessage(new TextMessage(pack.toJSONString()));
-                return true;
+        synchronized (sendLock) {
+            try {
+                JSONObject pack = getPack(type, body, packId);
+                if (session.isOpen()) {
+                    session.sendMessage(new TextMessage(pack.toJSONString()));
+                    return true;
+                }
+                return false;
+            } catch (IllegalStateException e) {
+                log.error("[Websocket] 发送消息时状态异常: {}", e.getMessage());
+                return false;
+            } catch (IOException e) {
+                log.error("[Websocket] 发送消息失败: {}", e.getMessage());
+                return false;
             }
-            return false;
-        } catch (IOException e) {
-            log.error("[Websocket]  发送消息失败 {}", e.getMessage());
-            return false;
         }
     }
 
@@ -86,9 +93,13 @@ public class BaseClient {
             if (session != null) {
                 if (session.isOpen()) {
                     session.close(status);
-                    log.info("[Websocket]  服务端主动关闭连接, ServerId: {}", getServerId());
+                    if (ClientManager.getInstance().isRegisteredServer(getServerId())) {
+                        log.info("[Websocket]  服务端主动关闭连接, ServerId: {}", getServerId());
+                    }
                 } else {
-                    log.info("[Websocket]  服务端主动关闭连接时发现客户端已离线, ServerId: {}", getServerId());
+                    if (ClientManager.getInstance().isRegisteredServer(getServerId())) {
+                        log.info("[Websocket]  服务端主动关闭连接时发现客户端已离线, ServerId: {}", getServerId());
+                    }
                 }
             }
         } catch (IOException e) {

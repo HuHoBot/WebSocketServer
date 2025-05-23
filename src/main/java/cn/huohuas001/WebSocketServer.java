@@ -49,7 +49,6 @@ public class WebSocketServer extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
         activeConnections.add(session);
-        log.info("[Websocket]  新客户端({})连接,当前连接数:{}", session.getRemoteAddress(), activeConnections.size());
     }
 
     @Override
@@ -57,8 +56,10 @@ public class WebSocketServer extends TextWebSocketHandler {
         activeConnections.remove(session);
         ServerPackage serverPackage = clientManager.getServerPackageBySession(session);
         if(serverPackage != null){
+            if (ClientManager.getInstance().isRegisteredServer(serverPackage.getServerId())) {
+                log.info("[Websocket]  客户端({})断开连接, ServerId: {}", session.getRemoteAddress(), serverPackage.getServerId());
+            }
             clientManager.unRegisterServer(serverPackage.getServerId());
-            log.info("[Websocket]  客户端({})断开连接, ServerId: {},当前连接数: {}", session.getRemoteAddress(), serverPackage.getServerId(), activeConnections.size());
         }
     }
 

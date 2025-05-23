@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'cn.huohuas001'
-version = '1.0.6'
+version = '1.0.8'
 
 repositories {
     mavenCentral()
@@ -23,6 +23,7 @@ dependencies {
     implementation "org.slf4j:slf4j-api:2.0.16"
     implementation "ch.qos.logback:logback-classic:1.5.16"
     implementation "ch.qos.logback:logback-core:1.5.16"
+    implementation 'org.xerial:sqlite-jdbc:3.42.0.0'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
