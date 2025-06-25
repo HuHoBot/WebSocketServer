@@ -32,6 +32,7 @@ public class ClientManager {
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private static final long HEARTBEAT_TIMEOUT = 15_000; // 15秒超时
     private static ClientManager Instance = null;
+    private final Object sendLock = new Object();
 
     // 初始化时启动定时任务
     static {
@@ -51,6 +52,10 @@ public class ClientManager {
             Instance = new ClientManager();
         }
         return Instance;
+    }
+
+    public Object getSendLock() {
+        return sendLock;
     }
 
     // 心跳检测逻辑

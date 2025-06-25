@@ -193,3 +193,4 @@ fabric.properties
 *.key
 *.pem
 *.p12
+*.properties

@@ -2,6 +2,7 @@ package cn.huohuas001.client;
 
 import cn.huohuas001.tools.ClientManager;
 import cn.huohuas001.tools.PackId;
+import cn.huohuas001.tools.WsThreadPool;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.socket.CloseStatus;
@@ -10,6 +11,9 @@ import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class BaseClient {
@@ -17,10 +21,34 @@ public class BaseClient {
     String serverId = null;
     String hashKey = null;
     private volatile long lastHeartbeatTime = System.currentTimeMillis();
-    private final Object sendLock = new Object();
+    private final BlockingQueue<Runnable> messageQueue = new LinkedBlockingQueue<>(200); // 单客户端队列容量
+
+
 
     public BaseClient(WebSocketSession session) {
         this.session = session;
+        // 注册到全局线程池
+        WsThreadPool.submitTask(this::messageProcessingLoop);
+    }
+
+    /**
+     * 消息处理循环
+     */
+    private void messageProcessingLoop() {
+        while (session.isOpen()) {
+            try {
+                Runnable task = messageQueue.poll(100, TimeUnit.MILLISECONDS);
+                if (task != null) {
+                    task.run();
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            } catch (Exception e) {
+                log.error("Message processing error", e);
+            }
+        }
+        log.debug("Message loop exited for session: {}", session.getId());
     }
 
     private JSONObject getPack(String type, JSONObject body, String packId){
@@ -48,7 +76,36 @@ public class BaseClient {
      * @param type 事件类型
      * @param body 消息包
      */
+    /*public boolean baseSendMessage(String type, JSONObject body, String packId) {
+        if (!session.isOpen()) return false;
+
+        return messageQueue.offer(() -> {
+            try {
+                JSONObject pack = new JSONObject();
+                JSONObject header = new JSONObject();
+                header.put("type", type);
+                header.put("id", packId);
+                pack.put("header", header);
+                pack.put("body", body);
+
+                synchronized (session) { // 针对同一session的发送同步
+                    if (session.isOpen()) {
+                        session.sendMessage(new TextMessage(pack.toJSONString()));
+                    }
+                }
+            } catch (IOException e) {
+                log.error("Send message failed", e);
+            }
+        });
+    }*/
+
+    /**
+     * 发送消息
+     * @param type 事件类型
+     * @param body 消息包
+     */
     public boolean baseSendMessage(String type,JSONObject body, String packId) {
+        Object sendLock = ClientManager.getInstance().getSendLock();
         synchronized (sendLock) {
             try {
                 JSONObject pack = getPack(type, body, packId);
@@ -89,6 +146,7 @@ public class BaseClient {
      */
     public void close(int code, String reason) {
         try {
+            messageQueue.clear(); // 清空未发送消息
             CloseStatus status = new CloseStatus(code, reason);
             if (session != null) {
                 if (session.isOpen()) {
