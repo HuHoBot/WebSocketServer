@@ -3,9 +3,9 @@ package cn.huohuas001.Events;
 import cn.huohuas001.client.BotClient;
 import cn.huohuas001.tools.ClientManager;
 
-public class handleResponeMsg extends BaseEvent{
+public class Server_handleResponeMsg extends ServerEvent {
 
-    public handleResponeMsg(ClientManager clientManager) {
+    public Server_handleResponeMsg(ClientManager clientManager) {
         super(clientManager);
     }
 

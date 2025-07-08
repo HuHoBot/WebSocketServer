@@ -2,7 +2,6 @@ package cn.huohuas001.Events;
 
 import cn.huohuas001.client.BotClient;
 import cn.huohuas001.client.ServerClient;
-import cn.huohuas001.config.BotClientConfig;
 import cn.huohuas001.config.LatestClientVersion;
 import cn.huohuas001.tools.BanManager;
 import cn.huohuas001.tools.ClientManager;
@@ -12,9 +11,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.socket.WebSocketSession;
 
 @Slf4j
-public class handleShakeHand extends BaseEvent{
-    private final BotClientConfig botClientConfig = new BotClientConfig();
-    public handleShakeHand(ClientManager clientManager) {
+public class Server_handleShakeHand extends ServerEvent {
+
+    public Server_handleShakeHand(ClientManager clientManager) {
         super(clientManager);
     }
 
@@ -56,20 +55,6 @@ public class handleShakeHand extends BaseEvent{
         });
     }
 
-    private void botClientConnect(WebSocketSession session, String serverId, String hashKey) {
-        JSONObject shakeHandPack = new JSONObject();
-        BotClient botClient = new BotClient(session);
-        botClient.setServerId(serverId);
-        botClient.setHashKey(hashKey);
-        clientManager.setBotClient(botClient);
-        shakeHandPack.put("code", 1);
-        shakeHandPack.put("msg", "");
-        botClient.sendMessage(BotClientSendEvent.SHOOK_HAND, shakeHandPack);
-        log.info("[Websocket] HuHoBot BotClient 已连接.");
-
-        //重新清空WaitingList
-        clientManager.reShakeWaitingServer();
-    }
 
     public boolean shakeHandRunner(WebSocketSession session) {
         String serverId = body.getString("serverId");
@@ -92,35 +77,6 @@ public class handleShakeHand extends BaseEvent{
             //拒绝连接
             serverClient.shutdown(1008, "serverId为空.");
             return false;
-        }
-
-        if (serverId.equals("BotClient")) {
-            if (!hashKey.equals(botClientConfig.getKey())) {
-                String msg = "密钥错误";
-                shakeHandPack.put("code", 3);
-                shakeHandPack.put("msg", msg);
-                serverClient.sendMessage(ServerSendEvent.shaked, shakeHandPack);
-                serverClient.shutdown(1008, msg);
-                return false;
-            }
-
-            if (session.getRemoteAddress() == null) {
-                return false;
-            }
-
-            String remoteIp = session.getRemoteAddress().getAddress().getHostAddress();
-
-            if (!remoteIp.equals(botClientConfig.getAllowedIp())) {
-                String msg = "IP 地址不在允许范围内";
-                shakeHandPack.put("code", 7);
-                shakeHandPack.put("msg", msg);
-                serverClient.sendMessage(ServerSendEvent.shaked, shakeHandPack);
-                serverClient.shutdown(1008, msg);
-                return false;
-            }
-
-            botClientConnect(session, serverId, hashKey);
-            return true;
         }
 
         //检测是否被ban

@@ -4,9 +4,9 @@ import cn.huohuas001.client.BotClient;
 import cn.huohuas001.tools.ClientManager;
 import com.alibaba.fastjson2.JSONObject;
 
-public class handleResponeOnlineList extends BaseEvent{
+public class Server_handleResponeOnlineList extends ServerEvent {
 
-    public handleResponeOnlineList(ClientManager clientManager) {
+    public Server_handleResponeOnlineList(ClientManager clientManager) {
         super(clientManager);
     }
 

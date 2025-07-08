@@ -1,9 +1,10 @@
 package cn.huohuas001.tools;
 
-import cn.huohuas001.Events.handleShakeHand;
+import cn.huohuas001.Events.Server_handleShakeHand;
 import cn.huohuas001.client.BotClient;
 import cn.huohuas001.client.ServerClient;
 import com.alibaba.fastjson2.JSONObject;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -22,15 +23,15 @@ import java.util.concurrent.atomic.AtomicReference;
 @Slf4j
 public class ClientManager {
     // 注册的服务器
-    private static final Map<String, ServerClient> registeredServers = new HashMap<>();
+    private static final Map<String, ServerClient> registeredServers = new ConcurrentHashMap<>();
     // 未注册的服务器
-    private static final Map<String, ServerClient> absentRegisteredServers = new HashMap<>();
+    private static final Map<String, ServerClient> absentRegisteredServers = new ConcurrentHashMap<>();
     //等待BotClient连接队列
     private static final Map<String, ServerClient> waitingBotClientList = new ConcurrentHashMap<>();
-
-    private BotClient botClient = null;
+    private static final long HEARTBEAT_TIMEOUT = 10_000; // 15秒超时
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    private static final long HEARTBEAT_TIMEOUT = 15_000; // 15秒超时
+    @Setter
+    private BotClient botClient = null;
     private static ClientManager Instance = null;
     private final Object sendLock = new Object();
 
@@ -123,7 +124,7 @@ public class ClientManager {
 
     public void reShakeWaitingServer() {
         new HashMap<>(waitingBotClientList).forEach((serverId, serverClient) -> {
-            handleShakeHand.botClientAllowConnect(serverClient);
+            Server_handleShakeHand.botClientAllowConnect(serverClient);
             removeWaitingBotClientList(serverId);
         });
     }
@@ -216,10 +217,6 @@ public class ClientManager {
         } else {
             return false;
         }
-    }
-
-    public void setBotClient(BotClient botClient){
-        this.botClient = botClient;
     }
 
     public BotClient getBotClient(){

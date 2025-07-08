@@ -5,13 +5,13 @@ import cn.huohuas001.tools.ClientManager;
 import cn.huohuas001.tools.ServerMsgPack;
 import com.alibaba.fastjson2.JSONObject;
 
-public abstract class BaseEvent {
+public abstract class ServerEvent {
     String packId;
     JSONObject body;
     ServerClient client;
     ClientManager clientManager;
 
-    public BaseEvent(ClientManager clientManager) {
+    public ServerEvent(ClientManager clientManager) {
         this.clientManager = clientManager;
     }
 

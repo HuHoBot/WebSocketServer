@@ -3,9 +3,9 @@ package cn.huohuas001.Events;
 import cn.huohuas001.client.BotClient;
 import cn.huohuas001.tools.ClientManager;
 
-public class handleChat extends BaseEvent {
+public class Server_handleChat extends ServerEvent {
 
-    public handleChat(ClientManager clientManager) {
+    public Server_handleChat(ClientManager clientManager) {
         super(clientManager);
     }
 

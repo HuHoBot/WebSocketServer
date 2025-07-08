@@ -12,7 +12,8 @@ public enum BotClientSendEvent {
     SHOOK_HAND("shaked"),
     HEART("heart"),
     CHAT("BotClient.chat"),
-    GET_CONFIRM_DATA("BotClient.getConfirmData");
+    GET_CONFIRM_DATA("BotClient.getConfirmData"),
+    SHUTDOWN("BotClient.shutdown");
 
 
 

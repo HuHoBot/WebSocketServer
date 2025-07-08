@@ -1,9 +1,11 @@
 package cn.huohuas001.client;
 
 import cn.huohuas001.tools.ClientManager;
+import cn.huohuas001.tools.Enums.ClientType;
 import cn.huohuas001.tools.PackId;
-import cn.huohuas001.tools.WsThreadPool;
 import com.alibaba.fastjson2.JSONObject;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -18,17 +20,22 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class BaseClient {
     WebSocketSession session;
+
+    private final ClientType clientType;
+    @Getter
+    @Setter
     String serverId = null;
-    String hashKey = null;
+
     private volatile long lastHeartbeatTime = System.currentTimeMillis();
     private final BlockingQueue<Runnable> messageQueue = new LinkedBlockingQueue<>(200); // 单客户端队列容量
+    @Getter
+    @Setter
+    String hashKey = null;
 
 
-
-    public BaseClient(WebSocketSession session) {
+    public BaseClient(WebSocketSession session, ClientType clientType) {
         this.session = session;
-        // 注册到全局线程池
-        WsThreadPool.submitTask(this::messageProcessingLoop);
+        this.clientType = clientType;
     }
 
     /**
@@ -71,53 +78,28 @@ public class BaseClient {
         baseSendMessage(type, body, packId);
     }
 
-    /**
-     * 发送消息
-     * @param type 事件类型
-     * @param body 消息包
-     */
-    /*public boolean baseSendMessage(String type, JSONObject body, String packId) {
-        if (!session.isOpen()) return false;
-
-        return messageQueue.offer(() -> {
-            try {
-                JSONObject pack = new JSONObject();
-                JSONObject header = new JSONObject();
-                header.put("type", type);
-                header.put("id", packId);
-                pack.put("header", header);
-                pack.put("body", body);
-
-                synchronized (session) { // 针对同一session的发送同步
-                    if (session.isOpen()) {
-                        session.sendMessage(new TextMessage(pack.toJSONString()));
-                    }
-                }
-            } catch (IOException e) {
-                log.error("Send message failed", e);
-            }
-        });
-    }*/
 
     /**
      * 发送消息
      * @param type 事件类型
      * @param body 消息包
      */
-    public boolean baseSendMessage(String type,JSONObject body, String packId) {
+    public boolean baseSendMessage(String type, JSONObject body, String packId) {
         Object sendLock = ClientManager.getInstance().getSendLock();
         synchronized (sendLock) {
             try {
+                if (!session.isOpen() || session == null) return false; // 再次检查
+
                 JSONObject pack = getPack(type, body, packId);
-                if (session.isOpen()) {
-                    session.sendMessage(new TextMessage(pack.toJSONString()));
-                    return true;
-                }
-                return false;
+                session.sendMessage(new TextMessage(pack.toJSONString()));
+                return true;
             } catch (IllegalStateException e) {
+                // 处理 TEXT_PARTIAL_WRITING 或其他状态异常
                 log.error("[Websocket] 发送消息时状态异常: {}", e.getMessage());
+                close(1000, "Connection state invalid"); // 主动关闭会话
                 return false;
             } catch (IOException e) {
+                // 处理 Broken pipe 或其他 IO 错误
                 log.error("[Websocket] 发送消息失败: {}", e.getMessage());
                 return false;
             }
@@ -128,6 +110,7 @@ public class BaseClient {
      * 更新最后一次心跳的时间
      */
     public void updateLastHeartbeatTime() {
+
         this.lastHeartbeatTime = System.currentTimeMillis();
     }
 
@@ -167,22 +150,6 @@ public class BaseClient {
 
     public InetSocketAddress getRemoteAddress() {
         return session.getRemoteAddress();
-    }
-
-    public void setServerId(String serverId) {
-        this.serverId = serverId;
-    }
-
-    public void setHashKey(String hashKey) {
-        this.hashKey = hashKey;
-    }
-
-    public String getServerId() {
-        return serverId;
-    }
-
-    public String getHashKey() {
-        return hashKey;
     }
 
     public boolean equals(Object obj){

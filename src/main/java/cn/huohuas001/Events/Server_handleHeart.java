@@ -3,9 +3,9 @@ package cn.huohuas001.Events;
 import cn.huohuas001.client.BotClient;
 import cn.huohuas001.tools.ClientManager;
 
-public class handleHeart extends BaseEvent{
+public class Server_handleHeart extends ServerEvent {
 
-    public handleHeart(ClientManager clientManager) {
+    public Server_handleHeart(ClientManager clientManager) {
         super(clientManager);
     }
 

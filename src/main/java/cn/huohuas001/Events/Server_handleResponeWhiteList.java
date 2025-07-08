@@ -3,9 +3,9 @@ package cn.huohuas001.Events;
 import cn.huohuas001.client.BotClient;
 import cn.huohuas001.tools.ClientManager;
 
-public class handleResponeWhiteList extends BaseEvent{
+public class Server_handleResponeWhiteList extends ServerEvent {
 
-    public handleResponeWhiteList(ClientManager clientManager) {
+    public Server_handleResponeWhiteList(ClientManager clientManager) {
         super(clientManager);
     }
 

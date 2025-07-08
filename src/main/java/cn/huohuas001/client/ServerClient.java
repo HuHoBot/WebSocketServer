@@ -1,20 +1,29 @@
 package cn.huohuas001.client;
 
 import cn.huohuas001.Events.ServerSendEvent;
+import cn.huohuas001.tools.Enums.ClientType;
 import cn.huohuas001.tools.PackId;
 import com.alibaba.fastjson2.JSONObject;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.socket.WebSocketSession;
 
 @Slf4j
 public class ServerClient extends BaseClient{
+    @Getter
+    @Setter
     private String platform = "Unkown";
+    @Getter
+    @Setter
     private String name = "Server";
+    @Setter
+    @Getter
     private String version = "0.0.0";
     private WebSocketSession session;
 
     public ServerClient(WebSocketSession session) {
-        super(session);
+        super(session, ClientType.Server);
     }
 
     public boolean sendMessage(ServerSendEvent type, JSONObject body){
@@ -24,30 +33,6 @@ public class ServerClient extends BaseClient{
 
     public boolean sendMessage(ServerSendEvent type, JSONObject body, String packId){
         return baseSendMessage(type.toString(), body, packId);
-    }
-
-    public String getPlatform() {
-        return platform;
-    }
-
-    public void setPlatform(String platform) {
-        this.platform = platform;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getVersion() {
-        return version;
-    }
-
-    public void setVersion(String version) {
-        this.version = version;
     }
 
     /**

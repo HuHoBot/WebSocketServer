@@ -6,9 +6,9 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class handleBindConfirm extends BaseEvent{
+public class Server_handleBindConfirm extends ServerEvent {
 
-    public handleBindConfirm(ClientManager clientManager) {
+    public Server_handleBindConfirm(ClientManager clientManager) {
         super(clientManager);
     }
 

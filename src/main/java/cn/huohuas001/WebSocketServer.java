@@ -3,9 +3,7 @@ package cn.huohuas001;
 import cn.huohuas001.Events.*;
 import cn.huohuas001.client.BotClient;
 import cn.huohuas001.client.ServerClient;
-import cn.huohuas001.tools.ClientManager;
-import cn.huohuas001.tools.ServerMsgPack;
-import cn.huohuas001.tools.ServerPackage;
+import cn.huohuas001.tools.*;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -14,46 +12,76 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import java.io.IOException;
+import java.lang.ref.SoftReference;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 @Component
 @Slf4j
 public class WebSocketServer extends TextWebSocketHandler {
-    // 管理活动连接
-    private final Set<WebSocketSession> activeConnections = new CopyOnWriteArraySet<>();
     // BotClient 连接
-    private static final Map<String, CompletableFuture<JSONObject>> responseFutureList = new HashMap<>();
+    private static final Map<String, CompletableFuture<JSONObject>> responseFutureList =
+            new LinkedHashMap<String, CompletableFuture<JSONObject>>(1000, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry eldest) {
+                    return size() > 1000; // 超出容量自动移除最旧条目
+                }
+            };
+    // 管理活动连接
+    private final Map<String, SoftReference<WebSocketSession>> activeConnections =
+            new ConcurrentHashMap<>(512);
     private static final ClientManager clientManager = new ClientManager();
-    private final Map<Enum<?>,BaseEvent> eventMapping = new HashMap<>();
+    private final Map<ServerRecvEvent, ServerEvent> serverEventMapping = new HashMap<>();
+    private final Map<BotClientRecvEvent, BotEvent> botEventMapping = new HashMap<>();
 
 
     public WebSocketServer() {
         // Server Event
-        registerProcess(ServerRecvEvent.heart,new handleHeart(clientManager));
-        registerProcess(ServerRecvEvent.success,new handleResponeMsg(clientManager));
-        registerProcess(ServerRecvEvent.error,new handleResponeMsg(clientManager));
-        registerProcess(ServerRecvEvent.queryWl,new handleResponeWhiteList(clientManager));
-        registerProcess(ServerRecvEvent.queryOnline,new handleResponeOnlineList(clientManager));
-        registerProcess(ServerRecvEvent.bindConfirm,new handleBindConfirm(clientManager));
-        registerProcess(ServerRecvEvent.chat, new handleChat(clientManager));
+        registerServerProcess(ServerRecvEvent.heart, new Server_handleHeart(clientManager));
+        registerServerProcess(ServerRecvEvent.success, new Server_handleResponeMsg(clientManager));
+        registerServerProcess(ServerRecvEvent.error, new Server_handleResponeMsg(clientManager));
+        registerServerProcess(ServerRecvEvent.queryWl, new Server_handleResponeWhiteList(clientManager));
+        registerServerProcess(ServerRecvEvent.queryOnline, new Server_handleResponeOnlineList(clientManager));
+        registerServerProcess(ServerRecvEvent.bindConfirm, new Server_handleBindConfirm(clientManager));
+        registerServerProcess(ServerRecvEvent.chat, new Server_handleChat(clientManager));
 
         //Bot Event
-        registerProcess(BotClientRecvEvent.SEND_MSG_BY_SERVER_ID,new handleBotSendPack2Server(clientManager));
-        registerProcess(BotClientRecvEvent.QUERY_CLIENT_LIST,new handleBotQueryClientList(clientManager));
+        registerBotProcess(BotClientRecvEvent.SEND_MSG_BY_SERVER_ID, new Bot_handleSendPack2Server(clientManager));
+        registerBotProcess(BotClientRecvEvent.QUERY_CLIENT_LIST, new Bot_handleQueryClientList(clientManager));
+        registerBotProcess(BotClientRecvEvent.HEART, new Bot_handleHeart(clientManager));
     }
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
-        activeConnections.add(session);
+        activeConnections.put(session.getId(), new SoftReference<>(session));
+
+        // 添加10秒握手超时检测
+        CompletableFuture.delayedExecutor(10, TimeUnit.SECONDS).execute(() -> {
+            try {
+                if (session.isOpen()) {
+                    ServerPackage serverPackage = clientManager.getServerPackageBySession(session);
+                    BotClient botClient = clientManager.getBotClient();
+                    if (serverPackage == null || !clientManager.isRegisteredServer(serverPackage.getServerId())) {
+                        //log.warn("[Websocket] 客户端({})10秒内未完成握手，强制断开", session.getRemoteAddress());
+                        if (botClient != null && !botClient.equals(session)) {
+                            session.close(CloseStatus.NORMAL.withReason("握手超时"));
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                log.error("[Websocket] 关闭超时连接时出错", e);
+            }
+        });
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
-        activeConnections.remove(session);
+        activeConnections.remove(session.getId());
         ServerPackage serverPackage = clientManager.getServerPackageBySession(session);
         if(serverPackage != null){
             if (ClientManager.getInstance().isRegisteredServer(serverPackage.getServerId())) {
@@ -67,16 +95,82 @@ public class WebSocketServer extends TextWebSocketHandler {
         responseFutureList.put(id, callback);
     }
 
-    private void registerProcess(Enum<?> eventType,BaseEvent event){
-        eventMapping.put(eventType,event);
+    private void registerServerProcess(ServerRecvEvent eventType, ServerEvent event) {
+        serverEventMapping.put(eventType, event);
     }
 
-    private void handleProcess(ServerMsgPack serverMsgPack){
-        BaseEvent event = eventMapping.get(serverMsgPack.getType());
+    private void registerBotProcess(BotClientRecvEvent eventType, BotEvent event) {
+        botEventMapping.put(eventType, event);
+    }
+
+    private void handleServerMessage(WebSocketSession session, MessagePack messagePack) {
+        String packId = messagePack.packId;
+        String msgType = messagePack.msgType;
+        JSONObject body = messagePack.body;
+
+        ServerRecvEvent eventType = ServerRecvEvent.find(msgType);
+        if (eventType == null) {
+            log.error("[Websocket]  未找到对应Server事件: {}", msgType);
+            return;
+        }
+        if (eventType == ServerRecvEvent.shakeHand) {
+            ServerMsgPack msgPack = new ServerMsgPack(eventType, body, packId, null);
+            Server_handleShakeHand handler = new Server_handleShakeHand(clientManager);
+            handler.setData(msgPack);
+            handler.shakeHandRunner(session);
+            return;
+        }
+        ServerEvent event = serverEventMapping.get(eventType);
+        if (event != null) {
+            ServerClient client = clientManager.getServerPackageBySession(session).getServerClient();
+            BotClient botClient = clientManager.getBotClient();
+            if (botClient == null) {
+                if (client != null) {
+                    client.shutdown(1003, "BotClient连接出现问题，请联系机器人管理员");
+                }
+                return;
+            }
+
+            if (client == null && !botClient.equals(session)) {
+                log.warn("[Websocket] 无效的客户端连接");
+                try {
+                    CloseStatus status = new CloseStatus(1000, "无效的客户端连接");
+                    session.close(status);
+                } catch (IOException e) {
+                    log.error("[Websocket]  处理无效客户端连接时发生错误:", e);
+                }
+                return;
+            }
+            ServerMsgPack msgPack = new ServerMsgPack(eventType, body, packId, client);
+            event.EventCall(msgPack);
+        } else {
+            log.error("[Websocket]  未找到Server处理程序: {}", msgType);
+        }
+    }
+
+    private void handleBotMessage(WebSocketSession session, MessagePack messagePack) {
+        String packId = messagePack.packId;
+        String msgType = messagePack.msgType;
+        JSONObject body = messagePack.body;
+
+        BotClientRecvEvent eventType = BotClientRecvEvent.findByValue(msgType);
+        if (eventType == null) {
+            log.error("[Websocket]  未找到对应Bot事件: {}", msgType);
+            return;
+        }
+        if (eventType == BotClientRecvEvent.SHAKE) {
+            BotMsgPack msgPack = new BotMsgPack(eventType, body, packId);
+            Bot_ShakeHand shakeHandEvent = new Bot_ShakeHand(clientManager);
+            shakeHandEvent.setData(msgPack);
+            shakeHandEvent.runShake(session);
+            return;
+        }
+        BotEvent event = botEventMapping.get(eventType);
         if(event != null) {
-            event.EventCall(serverMsgPack);
+            BotMsgPack msgPack = new BotMsgPack(eventType, body, packId);
+            event.EventCall(msgPack);
         }else{
-            log.error("[Websocket]  未找到处理程序: {}", serverMsgPack.getType());
+            log.error("[Websocket]  未找到Bot处理程序: {}", msgType);
         }
     }
 
@@ -96,18 +190,13 @@ public class WebSocketServer extends TextWebSocketHandler {
             JSONObject data = JSONObject.parseObject(payload);
             JSONObject header = data.getJSONObject("header");
             JSONObject body = data.getJSONObject("body");
-
             String msgType = header.getString("type");
-            //log.info("[Websocket]  收到type消息: {}", msgType );
             String packId = header.getString("id");
 
-            Enum<?> eventType = eventMapping.get(msgType);
+            //封包
+            MessagePack messagePack = new MessagePack(packId, msgType, body);
 
-            if (eventType == null) {
-                eventType = ServerRecvEvent.unknown;
-            }
-            ServerMsgPack serverMsgPack;
-
+            //执行回调消息
             if (responseFutureList.containsKey(packId)) {
                 log.debug("[Websocket]  收到response消息: {}", payload);
                 log.debug("处理事件回调 {}", packId);
@@ -119,36 +208,12 @@ public class WebSocketServer extends TextWebSocketHandler {
                 return;
             }
 
-            if(eventType != ServerRecvEvent.heart){
-                log.debug("[Websocket]  收到消息: {}", payload);
-                log.debug("处理事件 {}", eventType);
+            //判断是否是Bot发过来的消息
+            if (msgType.startsWith("BotClient.")) {
+                handleBotMessage(session, messagePack);
+            } else {
+                handleServerMessage(session, messagePack);
             }
-
-            if(eventType == ServerRecvEvent.shakeHand){
-                serverMsgPack = new ServerMsgPack(eventType, body, packId,null);
-                handleShakeHand handler = new handleShakeHand(clientManager);
-                handler.setData(serverMsgPack);
-                handler.shakeHandRunner(session);
-                return;
-            }
-
-            ServerClient client = clientManager.getServerPackageBySession(session).getServerClient();
-            BotClient botClient = clientManager.getBotClient();
-            if(botClient == null){
-                if (client != null) {
-                    client.shutdown(1003, "BotClient连接出现问题，请联系机器人管理员");
-                }
-                return;
-            }
-
-            if(client == null && !botClient.equals(session)){
-                return;
-            }
-
-
-            serverMsgPack = new ServerMsgPack(eventType, body, packId,client);
-            handleProcess(serverMsgPack);
-
         } catch (Exception e) {
             log.error("[Websocket]  处理消息时发生错误", e);
         }
