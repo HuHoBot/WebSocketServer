@@ -1,4 +1,4 @@
-package cn.huohuas001.Events;
+package cn.huohuas001.events.Bot.EventEnum;
 
 import java.util.HashMap;
 import java.util.Map;

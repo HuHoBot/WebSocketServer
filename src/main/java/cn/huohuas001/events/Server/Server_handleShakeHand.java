@@ -1,8 +1,10 @@
-package cn.huohuas001.Events;
+package cn.huohuas001.events.Server;
 
 import cn.huohuas001.client.BotClient;
 import cn.huohuas001.client.ServerClient;
 import cn.huohuas001.config.LatestClientVersion;
+import cn.huohuas001.events.Bot.EventEnum.BotClientSendEvent;
+import cn.huohuas001.events.Server.EventEnum.ServerSendEvent;
 import cn.huohuas001.tools.BanManager;
 import cn.huohuas001.tools.ClientManager;
 import cn.huohuas001.tools.VersionManager;

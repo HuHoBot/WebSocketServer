@@ -1,12 +1,11 @@
-package cn.huohuas001.Events;
+package cn.huohuas001.events.Server;
 
 import cn.huohuas001.client.BotClient;
 import cn.huohuas001.tools.ClientManager;
-import com.alibaba.fastjson2.JSONObject;
 
-public class Server_handleResponeOnlineList extends ServerEvent {
+public class Server_handleResponeMsg extends ServerEvent {
 
-    public Server_handleResponeOnlineList(ClientManager clientManager) {
+    public Server_handleResponeMsg(ClientManager clientManager) {
         super(clientManager);
     }
 
@@ -16,7 +15,7 @@ public class Server_handleResponeOnlineList extends ServerEvent {
             return false;
         }
         if (!packId.isEmpty()) {
-            JSONObject msg = body.getJSONObject("list");
+            String msg = body.getString("msg");
             BotClient botClient = clientManager.getBotClient();
             botClient.callBack(msg,packId);
         }

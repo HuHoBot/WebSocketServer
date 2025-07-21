@@ -1,4 +1,4 @@
-package cn.huohuas001.Events;
+package cn.huohuas001.events.Server.EventEnum;
 
 public enum ServerRecvEvent {
     sendMsg,

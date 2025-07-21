@@ -1,4 +1,4 @@
-package cn.huohuas001.Events;
+package cn.huohuas001.events.Server;
 
 import cn.huohuas001.client.ServerClient;
 import cn.huohuas001.tools.ClientManager;

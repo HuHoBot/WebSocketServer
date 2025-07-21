@@ -1,8 +1,11 @@
 package cn.huohuas001;
 
-import cn.huohuas001.Events.*;
 import cn.huohuas001.client.BotClient;
 import cn.huohuas001.client.ServerClient;
+import cn.huohuas001.events.Bot.*;
+import cn.huohuas001.events.Bot.EventEnum.BotClientRecvEvent;
+import cn.huohuas001.events.Server.EventEnum.ServerRecvEvent;
+import cn.huohuas001.events.Server.*;
 import cn.huohuas001.tools.*;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
@@ -66,7 +69,7 @@ public class WebSocketServer extends TextWebSocketHandler {
                 if (session.isOpen()) {
                     ServerPackage serverPackage = clientManager.getServerPackageBySession(session);
                     BotClient botClient = clientManager.getBotClient();
-                    if (serverPackage == null || !clientManager.isRegisteredServer(serverPackage.getServerId())) {
+                    if (serverPackage == null || !clientManager.isShakeHand(serverPackage.getServerId())) {
                         //log.warn("[Websocket] 客户端({})10秒内未完成握手，强制断开", session.getRemoteAddress());
                         if (botClient != null && !botClient.equals(session)) {
                             session.close(CloseStatus.NORMAL.withReason("握手超时"));
@@ -120,6 +123,7 @@ public class WebSocketServer extends TextWebSocketHandler {
             handler.shakeHandRunner(session);
             return;
         }
+
         ServerEvent event = serverEventMapping.get(eventType);
         if (event != null) {
             ServerClient client = clientManager.getServerPackageBySession(session).getServerClient();
@@ -132,7 +136,6 @@ public class WebSocketServer extends TextWebSocketHandler {
             }
 
             if (client == null && !botClient.equals(session)) {
-                log.warn("[Websocket] 无效的客户端连接");
                 try {
                     CloseStatus status = new CloseStatus(1000, "无效的客户端连接");
                     session.close(status);

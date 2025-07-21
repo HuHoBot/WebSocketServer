@@ -1,6 +1,8 @@
-package cn.huohuas001.Events;
+package cn.huohuas001.events.Bot;
 
 import cn.huohuas001.client.ServerClient;
+import cn.huohuas001.events.Bot.EventEnum.BotClientSendEvent;
+import cn.huohuas001.events.Server.EventEnum.ServerSendEvent;
 import cn.huohuas001.tools.ClientManager;
 import cn.huohuas001.tools.ServerPackage;
 import com.alibaba.fastjson2.JSONObject;

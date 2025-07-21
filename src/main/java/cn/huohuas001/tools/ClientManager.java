@@ -1,8 +1,8 @@
 package cn.huohuas001.tools;
 
-import cn.huohuas001.Events.Server_handleShakeHand;
 import cn.huohuas001.client.BotClient;
 import cn.huohuas001.client.ServerClient;
+import cn.huohuas001.events.Server.Server_handleShakeHand;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -108,6 +108,16 @@ public class ClientManager {
      */
     public boolean isRegisteredServer(String serverId){
         return registeredServers.containsKey(serverId);
+    }
+
+    /**
+     * 判断服务器是否已握手
+     *
+     * @param serverId 服务器id
+     * @return 是否已握手
+     */
+    public boolean isShakeHand(String serverId) {
+        return registeredServers.containsKey(serverId) || absentRegisteredServers.containsKey(serverId);
     }
 
     public void putAbsentServer(String serverId, ServerClient serverClient) {

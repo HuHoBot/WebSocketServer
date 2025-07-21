@@ -1,6 +1,6 @@
 package cn.huohuas001.tools;
 
-import cn.huohuas001.Events.BotClientRecvEvent;
+import cn.huohuas001.events.Bot.EventEnum.BotClientRecvEvent;
 import com.alibaba.fastjson2.JSONObject;
 
 public class BotMsgPack {

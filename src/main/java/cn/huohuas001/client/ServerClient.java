@@ -1,6 +1,6 @@
 package cn.huohuas001.client;
 
-import cn.huohuas001.Events.ServerSendEvent;
+import cn.huohuas001.events.Server.EventEnum.ServerSendEvent;
 import cn.huohuas001.tools.Enums.ClientType;
 import cn.huohuas001.tools.PackId;
 import com.alibaba.fastjson2.JSONObject;

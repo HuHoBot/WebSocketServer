@@ -1,4 +1,4 @@
-package cn.huohuas001.Events;
+package cn.huohuas001.events.Bot;
 
 import cn.huohuas001.client.BotClient;
 import cn.huohuas001.tools.BotMsgPack;

@@ -1,11 +1,11 @@
-package cn.huohuas001.Events;
+package cn.huohuas001.events.Server;
 
 import cn.huohuas001.client.BotClient;
 import cn.huohuas001.tools.ClientManager;
 
-public class Server_handleResponeMsg extends ServerEvent {
+public class Server_handleResponeWhiteList extends ServerEvent {
 
-    public Server_handleResponeMsg(ClientManager clientManager) {
+    public Server_handleResponeWhiteList(ClientManager clientManager) {
         super(clientManager);
     }
 
@@ -15,7 +15,7 @@ public class Server_handleResponeMsg extends ServerEvent {
             return false;
         }
         if (!packId.isEmpty()) {
-            String msg = body.getString("msg");
+            String msg = body.getString("list");
             BotClient botClient = clientManager.getBotClient();
             botClient.callBack(msg,packId);
         }

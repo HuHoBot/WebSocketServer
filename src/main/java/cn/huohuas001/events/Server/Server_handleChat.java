@@ -1,6 +1,7 @@
-package cn.huohuas001.Events;
+package cn.huohuas001.events.Server;
 
 import cn.huohuas001.client.BotClient;
+import cn.huohuas001.events.Bot.EventEnum.BotClientSendEvent;
 import cn.huohuas001.tools.ClientManager;
 
 public class Server_handleChat extends ServerEvent {
